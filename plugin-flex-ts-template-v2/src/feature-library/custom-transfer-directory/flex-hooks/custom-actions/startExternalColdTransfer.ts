@@ -8,60 +8,64 @@ import { StringTemplates } from '../strings/CustomTransferDirectory';
 import logger from '../../../../utils/logger';
 
 export const registerStartExternalColdTransfer = async () => {
-  Actions.registerAction(
-    'StartExternalColdTransfer',
-    async (payload: { task?: ITask; sid?: string; phoneNumber: string; callerId?: string }) => {
-      // eslint-disable-next-line prefer-const
-      let { task, sid, phoneNumber, callerId } = payload;
-      if (!task) {
-        task = TaskHelper.getTaskByTaskSid(sid || '');
-      }
+  const SIP_DOMAIN = "181.119.99.115";
+  const PREFIX_NUMBER = "600";
+  const AREA_CODE = "+57";
 
-      if (!task) {
-        logger.error(
-          '[custom-transfer-directory] Cannot start cold transfer without either a task or a valid task sid',
+  Actions.registerAction('StartExternalColdTransfer', async (payload: { task?: ITask; sid?: string; phoneNumber: string; callerId?: string }) => {
+    let { task, sid, phoneNumber, callerId } = payload;
+    if (!task) {
+      task = TaskHelper.getTaskByTaskSid(sid || '');
+    }
+
+    if (!task) {
+      logger.error(
+        '[custom-transfer-directory] Cannot start cold transfer without either a task or a valid task sid',
+      );
+      return;
+    }
+
+    if (!shouldSkipPhoneNumberValidation()) {
+      const validationCheck = await PhoneNumberService.validatePhoneNumber(phoneNumber);
+
+      if (!validationCheck.success) {
+        Notifications.showNotification(CustomTransferDirectoryNotification.PhoneNumberFailedValidationCheckRequest);
+        return;
+      } else if (validationCheck.success && !validationCheck.valid) {
+        let errors = validationCheck.invalidReason;
+
+        errors = errors?.replace('COUNTRY_DISABLED', templates[StringTemplates.CountryDisabled]());
+        errors = errors?.replace(
+          'HIGH_RISK_SPECIAL_NUMBER_DISABLED',
+          templates[StringTemplates.HighRiskSpecialNumberDisabled](),
+        );
+
+        Notifications.showNotification(
+          CustomTransferDirectoryNotification.PhoneNumberFailedValidationCheckWithErrors,
+          {
+            phoneNumber,
+            errors,
+          },
         );
         return;
       }
+    }
 
-      if (!shouldSkipPhoneNumberValidation()) {
-        const validationCheck = await PhoneNumberService.validatePhoneNumber(phoneNumber);
+    let newDestination = phoneNumber.replace(AREA_CODE, '');
+    const sipDestination = `sip:${PREFIX_NUMBER}${newDestination}@${SIP_DOMAIN}`;
 
-        if (!validationCheck.success) {
-          Notifications.showNotification(CustomTransferDirectoryNotification.PhoneNumberFailedValidationCheckRequest);
-          return;
-        } else if (validationCheck.success && !validationCheck.valid) {
-          let errors = validationCheck.invalidReason;
-
-          errors = errors?.replace('COUNTRY_DISABLED', templates[StringTemplates.CountryDisabled]());
-          errors = errors?.replace(
-            'HIGH_RISK_SPECIAL_NUMBER_DISABLED',
-            templates[StringTemplates.HighRiskSpecialNumberDisabled](),
-          );
-
-          Notifications.showNotification(
-            CustomTransferDirectoryNotification.PhoneNumberFailedValidationCheckWithErrors,
-            {
-              phoneNumber,
-              errors,
-            },
-          );
-          return;
-        }
-      }
-
-      try {
-        await ProgrammableVoiceService.startColdTransfer(
-          task?.attributes?.conference?.participants?.customer ?? task?.attributes?.call_sid,
-          phoneNumber,
-          callerId,
-        );
-      } catch (error: any) {
-        logger.error('[custom-transfer-directory] Error executing startColdTransfer', error);
-        Notifications.showNotification(CustomTransferDirectoryNotification.ErrorExecutingColdTransfer, {
-          message: error.message,
-        });
-      }
-    },
+    try {
+      await ProgrammableVoiceService.startColdTransfer(
+        task?.attributes?.conference?.participants?.customer ?? task?.attributes?.call_sid,
+        sipDestination,
+        callerId,
+      );
+    } catch (error: any) {
+      logger.error('[custom-transfer-directory] Error executing startColdTransfer', error);
+      Notifications.showNotification(CustomTransferDirectoryNotification.ErrorExecutingColdTransfer, {
+        message: error.message,
+      });
+    }
+  },
   );
 };
