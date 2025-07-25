@@ -427,7 +427,10 @@
         "exclude_queues": []
       },
       "outbound_email_new_task": {
-        "enabled": true
+        "enabled": true,
+        "remitentes": [
+          "ejemplo.ejemplo@ejemplo.com"
+        ]
       }
     }
   }
