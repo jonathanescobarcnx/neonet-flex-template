@@ -1,0 +1,64 @@
+/* src/TwilioEmailForm.css */
+.twilio-form-container {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(18, 28, 45, 0.08);
+    padding: 32px 24px 24px 24px;
+    border: 1px solid #e4e6eb;
+    max-width: 500px;
+    margin: 0 auto;
+    font-family: 'Inter', 'TwilioSansText', Arial, sans-serif;
+}
+
+.twilio-form-label {
+    font-weight: 600;
+    color: #1f3049;
+    margin-bottom: 4px;
+    display: block;
+    font-size: 15px;
+}
+
+.twilio-form-input,
+.twilio-form-select,
+.twilio-form-textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: 1px solid #cbd2e0;
+    margin-bottom: 16px;
+    font-size: 15px;
+    background: #f9fafb;
+    color: #1f3049;
+    transition: border-color 0.2s;
+}
+
+.twilio-form-input:focus,
+.twilio-form-select:focus,
+.twilio-form-textarea:focus {
+    border-color: #0263e0;
+    outline: none;
+    background: #fff;
+}
+
+.twilio-form-textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+.twilio-form-button {
+    width: 100%;
+    background: #0263e0;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 12px 0;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: background 0.2s;
+}
+
+.twilio-form-button:hover {
+    background: #005bb5;
+}

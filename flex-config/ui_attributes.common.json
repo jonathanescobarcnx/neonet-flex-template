@@ -425,6 +425,9 @@
         "enabled": false,
         "exclude_attributes": [],
         "exclude_queues": []
+      },
+      "outbound_email_new_task": {
+        "enabled": true
       }
     }
   }
