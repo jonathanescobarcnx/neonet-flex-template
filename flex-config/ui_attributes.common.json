@@ -430,7 +430,8 @@
         "enabled": true,
         "remitentes": [
           "ejemplo.ejemplo@ejemplo.com"
-        ]
+        ],
+        "dominio": "ejemplo.com"
       }
     }
   }

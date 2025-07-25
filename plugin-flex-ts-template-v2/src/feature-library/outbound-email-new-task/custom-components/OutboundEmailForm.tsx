@@ -1,18 +1,28 @@
 import React, { useEffect, useState } from 'react';
 import { Actions, Manager } from '@twilio/flex-ui';
 import { obtenerColasTwilioFlex } from '../helpers/queues';
-import { getRemitentes } from '../config';
+import { getRemitentes, getDominio } from '../config';
 import './TwilioEmailForm.css';
-
-const remitentes = getRemitentes();
 
 const OutboundEmailForm = () => {
     const [colas, setColas] = useState([]);
     const [selectedQueueSid, setSelectedQueueSid] = useState('');
 
+    // Obtener remitentes y dominio configurados
+    const remitentes = getRemitentes();
+    const dominio = getDominio();
+
+    // Obtener correo del worker logueado y cambiarle el dominio
+    const manager = Manager.getInstance();
+    const workerEmail = manager.workerClient?.attributes?.email || '';
+    let workerEmailWithDomain = '';
+    if (workerEmail && dominio) {
+        const [user] = workerEmail.split('@');
+        workerEmailWithDomain = `${user}@${dominio}`;
+    }
+
     useEffect(() => {
         const fetchColas = async () => {
-            const manager = Manager.getInstance();
             const result = await obtenerColasTwilioFlex();
             setColas(result);
             if (result.length > 0) setSelectedQueueSid(result[0].sid);
@@ -29,7 +39,7 @@ const OutboundEmailForm = () => {
                     destination: form.to.value,
                     queueSid: form.queueSid.value,
                     from: form.from.value,
-                    fromName: "Alexis Espinoza",
+                    fromName: manager.workerClient?.attributes?.full_name || "",
                     taskAttributes: {}
                 });
             }}
@@ -54,7 +64,10 @@ const OutboundEmailForm = () => {
 
             <label className="twilio-form-label">Remitente (from):</label>
             <select name="from" required className="twilio-form-select">
-                {remitentes.map(remitente => (
+                {workerEmailWithDomain && (
+                    <option value={workerEmailWithDomain}>{workerEmailWithDomain} (mi usuario)</option>
+                )}
+                {remitentes.filter(r => r !== workerEmailWithDomain).map(remitente => (
                     <option key={remitente} value={remitente}>{remitente}</option>
                 ))}
             </select>
