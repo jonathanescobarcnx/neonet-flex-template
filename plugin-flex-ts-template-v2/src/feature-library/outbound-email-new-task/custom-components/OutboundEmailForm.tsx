@@ -1,16 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { Actions, Manager } from '@twilio/flex-ui';
 import { obtenerColasTwilioFlex } from '../helpers/queues';
-import { getRemitentes, getDominio } from '../config';
+import { getRemitentes, getDominio, getColasPermitidas } from '../config';
 import './TwilioEmailForm.css';
 
 const OutboundEmailForm = () => {
     const [colas, setColas] = useState([]);
     const [selectedQueueSid, setSelectedQueueSid] = useState('');
 
-    // Obtener remitentes y dominio configurados
+    // Obtener remitentes, dominio y colas permitidas configurados
     const remitentes = getRemitentes();
     const dominio = getDominio();
+    const colasPermitidas = getColasPermitidas();
 
     // Obtener correo del worker logueado y cambiarle el dominio
     const manager = Manager.getInstance();
@@ -24,11 +25,26 @@ const OutboundEmailForm = () => {
     useEffect(() => {
         const fetchColas = async () => {
             const result = await obtenerColasTwilioFlex();
-            setColas(result);
-            if (result.length > 0) setSelectedQueueSid(result[0].sid);
+
+            // Filtrar colas según la configuración
+            let colasFiltradas = result;
+            if (colasPermitidas && colasPermitidas.length > 0) {
+                colasFiltradas = result.filter((cola: any) => {
+                    // Verificar si la cola está en la lista de permitidas por nombre o SID
+                    const isPermitida = colasPermitidas.some(colaPermitida =>
+                        cola.friendly_name === colaPermitida ||
+                        cola.sid === colaPermitida
+                    );
+                    console.log(`Cola "${cola.friendly_name}" (${cola.sid}) - Permitida: ${isPermitida}`);
+                    return isPermitida;
+                });
+            }
+
+            setColas(colasFiltradas);
+            if (colasFiltradas.length > 0) setSelectedQueueSid(colasFiltradas[0].sid);
         };
         fetchColas();
-    }, []);
+    }, [colasPermitidas]);
 
     return (
         <form

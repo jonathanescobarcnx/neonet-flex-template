@@ -431,7 +431,10 @@
         "remitentes": [
           "ejemplo.ejemplo@ejemplo.com"
         ],
-        "dominio": "ejemplo.com"
+        "dominio": "ejemplo.com",
+        "colas_permitidas": [
+          "Outbound Email"
+        ]
       }
     }
   }
