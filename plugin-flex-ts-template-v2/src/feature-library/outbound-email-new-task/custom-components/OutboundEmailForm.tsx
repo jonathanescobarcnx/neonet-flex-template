@@ -26,25 +26,41 @@ const OutboundEmailForm = () => {
         const fetchColas = async () => {
             const result = await obtenerColasTwilioFlex();
 
-            // Filtrar colas según la configuración
-            let colasFiltradas = result;
-            if (colasPermitidas && colasPermitidas.length > 0) {
-                colasFiltradas = result.filter((cola: any) => {
-                    // Verificar si la cola está en la lista de permitidas por nombre o SID
-                    const isPermitida = colasPermitidas.some(colaPermitida =>
-                        cola.friendly_name === colaPermitida ||
-                        cola.sid === colaPermitida
-                    );
-                    console.log(`Cola "${cola.friendly_name}" (${cola.sid}) - Permitida: ${isPermitida}`);
-                    return isPermitida;
-                });
+            // Si no hay colas permitidas configuradas, no mostrar nada
+            if (!colasPermitidas || colasPermitidas.length === 0) {
+                console.log('No hay colas configuradas, no se mostrará el formulario');
+                setColas([]);
+                setSelectedQueueSid('');
+                return;
             }
+
+            // Filtrar colas según la configuración
+            const colasFiltradas = result.filter((cola: any) => {
+                // Verificar si la cola está en la lista de permitidas por nombre o SID
+                const isPermitida = colasPermitidas.some(colaPermitida =>
+                    cola.friendly_name === colaPermitida ||
+                    cola.sid === colaPermitida
+                );
+                console.log(`Cola "${cola.friendly_name}" (${cola.sid}) - Permitida: ${isPermitida}`);
+                return isPermitida;
+            });
 
             setColas(colasFiltradas);
             if (colasFiltradas.length > 0) setSelectedQueueSid(colasFiltradas[0].sid);
         };
         fetchColas();
     }, [colasPermitidas]);
+
+    // Si no hay colas configuradas, no mostrar el formulario
+    if (colas.length === 0) {
+        return (
+            <div className="twilio-form-container">
+                <p style={{ textAlign: 'center', color: '#666', padding: '20px' }}>
+                    No hay colas de email configuradas. Contacta al administrador para configurar las colas permitidas.
+                </p>
+            </div>
+        );
+    }
 
     return (
         <form
