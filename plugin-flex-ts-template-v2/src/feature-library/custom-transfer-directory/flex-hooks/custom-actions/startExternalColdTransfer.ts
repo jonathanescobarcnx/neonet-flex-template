@@ -8,21 +8,15 @@ import { StringTemplates } from '../strings/CustomTransferDirectory';
 import logger from '../../../../utils/logger';
 
 export const registerStartExternalColdTransfer = async () => {
-  Actions.registerAction(
-    'StartExternalColdTransfer',
-    async (payload: { task?: ITask; sid?: string; phoneNumber: string; callerId?: string }) => {
-      // eslint-disable-next-line prefer-const
-      let { task, sid, phoneNumber, callerId } = payload;
-      if (!task) {
-        task = TaskHelper.getTaskByTaskSid(sid || '');
-      }
+  const SIP_DOMAIN = "181.119.99.115";
+  const PREFIX_NUMBER = "600";
+  const AREA_CODE = "+57";
 
-      if (!task) {
-        logger.error(
-          '[custom-transfer-directory] Cannot start cold transfer without either a task or a valid task sid',
-        );
-        return;
-      }
+  Actions.registerAction('StartExternalColdTransfer', async (payload: { task?: ITask; sid?: string; phoneNumber: string; callerId?: string }) => {
+    let { task, sid, phoneNumber, callerId } = payload;
+    if (!task) {
+      task = TaskHelper.getTaskByTaskSid(sid || '');
+    }
 
       // Validate phone numbers if not disabled. We cannot validate application SIDs as they
       // may be from another account.
@@ -66,18 +60,32 @@ export const registerStartExternalColdTransfer = async () => {
         }
       }
 
-      try {
-        await ProgrammableVoiceService.startColdTransfer(
-          task?.attributes?.conference?.participants?.customer ?? task?.attributes?.call_sid,
-          phoneNumber,
-          callerId,
+        Notifications.showNotification(
+          CustomTransferDirectoryNotification.PhoneNumberFailedValidationCheckWithErrors,
+          {
+            phoneNumber,
+            errors,
+          },
         );
-      } catch (error: any) {
-        logger.error('[custom-transfer-directory] Error executing startColdTransfer', error);
-        Notifications.showNotification(CustomTransferDirectoryNotification.ErrorExecutingColdTransfer, {
-          message: error.message,
-        });
+        return;
       }
-    },
+    }
+
+    let newDestination = phoneNumber.replace(AREA_CODE, '');
+    const sipDestination = `sip:${PREFIX_NUMBER}${newDestination}@${SIP_DOMAIN}`;
+
+    try {
+      await ProgrammableVoiceService.startColdTransfer(
+        task?.attributes?.conference?.participants?.customer ?? task?.attributes?.call_sid,
+        sipDestination,
+        callerId,
+      );
+    } catch (error: any) {
+      logger.error('[custom-transfer-directory] Error executing startColdTransfer', error);
+      Notifications.showNotification(CustomTransferDirectoryNotification.ErrorExecutingColdTransfer, {
+        message: error.message,
+      });
+    }
+  },
   );
 };

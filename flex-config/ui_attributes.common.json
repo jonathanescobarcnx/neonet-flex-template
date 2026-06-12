@@ -433,6 +433,16 @@
         "screen_pop": true,
         "show_panel_automatically": true,
         "utility_bar_status": true
+      },
+      "outbound_email_new_task": {
+        "enabled": true,
+        "remitentes": [
+          "ejemplo.ejemplo@ejemplo.com"
+        ],
+        "dominio": "ejemplo.com",
+        "colas_permitidas": [
+          "Outbound Email"
+        ]
       }
     }
   }

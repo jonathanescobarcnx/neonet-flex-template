@@ -24,14 +24,14 @@ const ExternalDirectoryTab = (props: OwnProps) => {
   const generateDirectoryEntries = (): Array<DirectoryEntry> => {
     return getExternalDirectory().map(
       (entry) =>
-        ({
-          ...entry,
-          warm_transfer_enabled: entry.warm_transfer_enabled && isVoiceXWTEnabled(),
-          address: entry.number,
-          tooltip: entry.number,
-          type: 'number',
-          key: uuidv4(),
-        } as DirectoryEntry),
+      ({
+        ...entry,
+        warm_transfer_enabled: entry.warm_transfer_enabled && isVoiceXWTEnabled(),
+        address: entry.number,
+        tooltip: entry.number,
+        type: 'number',
+        key: uuidv4(),
+      } as DirectoryEntry),
     );
   };
 
@@ -41,15 +41,15 @@ const ExternalDirectoryTab = (props: OwnProps) => {
       (shared ? sharedContactList : myContactList)
         ?.map(
           (entry: any) =>
-            ({
-              cold_transfer_enabled: shared ? entry.allowColdTransfer ?? true : true,
-              warm_transfer_enabled: isVoiceXWTEnabled() && shared ? entry.allowWarmTransfer ?? true : true,
-              label: entry.name,
-              address: entry.phoneNumber,
-              tooltip: entry.phoneNumber,
-              type: 'number',
-              key: uuidv4(),
-            } as DirectoryEntry),
+          ({
+            cold_transfer_enabled: shared ? entry.allowColdTransfer ?? true : true,
+            warm_transfer_enabled: isVoiceXWTEnabled() && shared ? entry.allowWarmTransfer ?? true : true,
+            label: entry.name,
+            address: entry.phoneNumber,
+            tooltip: entry.phoneNumber,
+            type: 'number',
+            key: uuidv4(),
+          } as DirectoryEntry),
         )
         ?.filter((entry: DirectoryEntry) => entry.cold_transfer_enabled || entry.warm_transfer_enabled) ?? [] // Return an empty array if the contacts feature is disabled
     );
@@ -67,20 +67,29 @@ const ExternalDirectoryTab = (props: OwnProps) => {
   }, [myContactList, sharedContactList]);
 
   const onTransferEntryClick = (entry: DirectoryEntry, transferOptions: TransferClickPayload) => {
+    // Valores de prueba definidos directamente
+    const SIP_DOMAIN = "181.119.99.115";
+    const PREFIX_NUMBER = "600";
+    const AREA_CODE = "+57";
+
     const defaultFromNumber = Manager.getInstance().serviceConfiguration.outbound_call_flows.default.caller_id;
     const callerId = workerAttrs.phone
       ? workerAttrs.phone
       : workerAttrs.selectedCallerId
-      ? workerAttrs.selectedCallerId
-      : defaultFromNumber;
+        ? workerAttrs.selectedCallerId
+        : defaultFromNumber;
 
-    if (transferOptions.mode === 'WARM')
+    if (transferOptions.mode === 'WARM') {
+      // Transformar el número a formato SIP
+      let newDestination = entry.address.replace(AREA_CODE, '');
+      const sipDestination = `sip:${PREFIX_NUMBER}${newDestination}@${SIP_DOMAIN}`;
+
       Actions.invokeAction('StartExternalWarmTransfer', {
         task: props.task,
-        phoneNumber: entry.address,
+        phoneNumber: sipDestination,
         callerId,
       });
-    else if (transferOptions.mode === 'COLD') {
+    } else if (transferOptions.mode === 'COLD') {
       let from;
       if (
         (props.task?.attributes?.caller && props.task?.attributes?.caller.startsWith('sip')) ||
