@@ -275,14 +275,10 @@
         "highlight_handle_time": true,
         "handle_time_warning_threshold": 180,
         "handle_time_exceeded_threshold": 300,
-        "display_task_queue_name": false,
         "columns": {
-          "calls": true,
-          "other_tasks": true,
           "team": false,
           "department": false,
           "location": false,
-          "agent_skills": true,
           "activity_icon": false
         }
       },
@@ -304,7 +300,8 @@
           "task_summary_tile": false,
           "team_activity_tile": false,
           "status_idle_color": "limegreen",
-          "status_busy_color": "royalblue"
+          "status_busy_color": "royalblue",
+          "status_idle_name": "Available"
         },
         "channels": {
           "Voice": {
@@ -425,6 +422,17 @@
         "enabled": false,
         "exclude_attributes": [],
         "exclude_queues": []
+      },
+      "salesforce_integration": {
+        "enabled": false,
+        "activity_logging": true,
+        "click_to_dial": true,
+        "copilot_notes": true,
+        "hide_crm_container": true,
+        "prevent_popout_during_call": true,
+        "screen_pop": true,
+        "show_panel_automatically": true,
+        "utility_bar_status": true
       }
     }
   }

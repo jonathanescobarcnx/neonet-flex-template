@@ -10,7 +10,7 @@ Time to complete: _~8 minutes_
 
 :::info INFO
 
-These steps require a [currently-maintained version of Flex UI 2.x](https://www.twilio.com/docs/flex/flex-ui-eol-reference) to be configured on your Flex account, and the TaskRouter workspace name to be the default "Flex Task Assignment".
+These steps require a [currently-maintained version of Flex UI 2.x](https://www.twilio.com/docs/flex/flex-ui-eol-reference) to be configured on your Flex account, and the TaskRouter workspace name to be the default (containing "Flex Task Assignment"). If you have already deployed plugins from the Flex Plugin Library, please [read this note first](/#flex-plugin-library).
 
 :::
 
@@ -30,7 +30,7 @@ These steps require a [currently-maintained version of Flex UI 2.x](https://www.
    ![image](/img/guides/github-secrets.png)
 
 4. Log in to Flex, open the admin panel, and validate Flex UI 2.x is the configured version.
-5. _Optionally_ navigate to the Flex console and enable the [Flex dialpad](https://console.twilio.com/us1/develop/flex/manage/voice?frameUrl=%2Fconsole%2Fflex%2Fvoice%3Fx-target-region%3Dus1) (this is required for some features)
+5. _Optionally_ navigate to the Flex console and enable the [Flex dialpad](https://console.twilio.com/us1/develop/flex/channels/voice) (this is required for some features)
 6. Navigate over to GitHub actions of your repository and select the `Deploy Flex` action script, _select the environment_ you want to deploy, and check the boxes for
    - `Is this the first release to the environment?`
    - `Deploy Terraform?`  (as *cautioned* below)

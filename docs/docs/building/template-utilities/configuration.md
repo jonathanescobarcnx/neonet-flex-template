@@ -211,16 +211,16 @@ If you need to add (or modify existing) environment variables that are secrets o
 
 When the setup script runs, it finds strings matching the pattern `<YOUR_VARIABLE_NAME_HERE>` in each config file it is parsing. For each variable name found this way (in our example here, the variable name is `VARIABLE_NAME_HERE`), the script will first check for an existing environment variable with that name, and use it if present. All secrets and variables configured in the GitHub environment are made available to the script as environment variables.
 
-If the value is not found in the environment variables, the `scripts/config/mappings.json` file is consulted to map that variable to a value (such as a SID or serverless domain) using name-matched results from the Twilio CLI. The format of this file is as follows:
+If the value is not found in the environment variables, the `scripts/config/mappings.json` file is consulted to map that variable to a value (such as a SID or serverless domain) using name-matched results from the Twilio API. The format of this file is as follows:
 
 ```json title=mappings.json
 {
   "VARIABLE_NAME_HERE": {
-    "type": "tr-workflow", // Type of Twilio resource to fetch the value of: serverless-domain, serverless-service, serverless-environment, serverless-function, tr-workspace, tr-workflow, chat-service, or sync-service
+    "type": "tr-workflow", // Type of Twilio resource to fetch the value of: serverless-domain, serverless-service, serverless-environment, serverless-function, studio-flow, tr-queue, tr-workspace, tr-workflow, chat-service, or sync-service
     "name": "My Workflow", // Name of resource to find
     "localValue": "My Other Workflow", // Optionally override the name property with a different one when running locally
     "fallback": "/(Assign.*Anyone)/", // Optionally define a fallback in case the defined name is not found. Note that this regex format is allowed in any of these properties except 'type'.
-    "parent": "PARENT_VARIABLE_NAME_HERE" // Required for serverless-environment, serverless-function, and tr-workflow types. Indicates the variable representing this item's parent object (of type serverless-service or tr-workspace, depending on this item's type).
+    "parent": "PARENT_VARIABLE_NAME_HERE" // Required for serverless-environment, serverless-function, tr-queue, and tr-workflow types. Indicates the variable representing this item's parent object (of type serverless-service or tr-workspace, depending on this item's type).
   }
 }
 ```
