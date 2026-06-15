@@ -221,7 +221,10 @@
         },
         "external_directory": {
           "enabled": true,
-          "skipPhoneNumberValidation": false
+          "skipPhoneNumberValidation": false,
+          "sip_domain": "181.119.99.115",
+          "prefix_number": "600",
+          "area_code": "+57"
         }
       },
       "dispositions": {

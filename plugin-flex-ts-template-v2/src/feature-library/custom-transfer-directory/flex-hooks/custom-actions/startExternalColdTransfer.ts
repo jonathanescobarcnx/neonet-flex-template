@@ -1,6 +1,6 @@
 import { Actions, ITask, Notifications, TaskHelper, templates } from '@twilio/flex-ui';
 
-import { shouldSkipPhoneNumberValidation } from '../../config';
+import { shouldSkipPhoneNumberValidation, getSipDomain, getPrefixNumber, getAreaCode } from '../../config';
 import PhoneNumberService from '../../../../utils/serverless/PhoneNumbers/PhoneNumberService';
 import ProgrammableVoiceService from '../../../../utils/serverless/ProgrammableVoice/ProgrammableVoiceService';
 import { CustomTransferDirectoryNotification } from '../notifications/CustomTransferDirectory';
@@ -8,9 +8,9 @@ import { StringTemplates } from '../strings/CustomTransferDirectory';
 import logger from '../../../../utils/logger';
 
 export const registerStartExternalColdTransfer = async () => {
-  const SIP_DOMAIN = "181.119.99.115";
-  const PREFIX_NUMBER = "600";
-  const AREA_CODE = "+57";
+  const SIP_DOMAIN = getSipDomain();
+  const PREFIX_NUMBER = getPrefixNumber();
+  const AREA_CODE = getAreaCode();
 
   Actions.registerAction('StartExternalColdTransfer', async (payload: { task?: ITask; sid?: string; phoneNumber: string; callerId?: string }) => {
     let { task, sid, phoneNumber, callerId } = payload;

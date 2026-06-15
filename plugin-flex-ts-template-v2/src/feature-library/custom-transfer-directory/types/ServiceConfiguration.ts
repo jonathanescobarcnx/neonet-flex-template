@@ -20,5 +20,8 @@ export default interface CustomTransferDirectoryConfig {
     enabled: boolean;
     skipPhoneNumberValidation: boolean;
     directory?: Array<ExternalDirectoryEntry>;
+    sip_domain?: string;
+    prefix_number?: string;
+    area_code?: string;
   };
 }

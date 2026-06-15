@@ -31,6 +31,9 @@ const {
   enabled: externalDirectoryEnabled = false,
   skipPhoneNumberValidation = false,
   directory = [] as Array<ExternalDirectoryEntry>,
+  sip_domain = '',
+  prefix_number = '',
+  area_code = '',
 } = external_directory_config || {};
 
 const {
@@ -102,6 +105,10 @@ export const isVoiceXWTEnabled = () => {
 export const shouldSkipPhoneNumberValidation = () => {
   return skipPhoneNumberValidation;
 };
+
+export const getSipDomain = (): string => sip_domain;
+export const getPrefixNumber = (): string => prefix_number;
+export const getAreaCode = (): string => area_code;
 
 export const isCustomWorkerTransferEnabled = (): boolean => {
   return isFeatureEnabled() && workerEnabled;

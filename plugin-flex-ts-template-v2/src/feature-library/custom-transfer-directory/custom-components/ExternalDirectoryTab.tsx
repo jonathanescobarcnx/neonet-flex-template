@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { v4 as uuidv4 } from 'uuid';
 
-import { getExternalDirectory, isVoiceXWTEnabled } from '../config';
+import { getExternalDirectory, isVoiceXWTEnabled, getSipDomain, getPrefixNumber, getAreaCode } from '../config';
 import { DirectoryEntry } from '../types/DirectoryEntry';
 import AppState from '../../../types/manager/AppState';
 import { reduxNamespace } from '../../../utils/state';
@@ -67,10 +67,9 @@ const ExternalDirectoryTab = (props: OwnProps) => {
   }, [myContactList, sharedContactList]);
 
   const onTransferEntryClick = (entry: DirectoryEntry, transferOptions: TransferClickPayload) => {
-    // Valores de prueba definidos directamente
-    const SIP_DOMAIN = "181.119.99.115";
-    const PREFIX_NUMBER = "600";
-    const AREA_CODE = "+57";
+    const SIP_DOMAIN = getSipDomain();
+    const PREFIX_NUMBER = getPrefixNumber();
+    const AREA_CODE = getAreaCode();
 
     const defaultFromNumber = Manager.getInstance().serviceConfiguration.outbound_call_flows.default.caller_id;
     const callerId = workerAttrs.phone
