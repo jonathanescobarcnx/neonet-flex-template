@@ -60,17 +60,6 @@ export const registerStartExternalColdTransfer = async () => {
         }
       }
 
-        Notifications.showNotification(
-          CustomTransferDirectoryNotification.PhoneNumberFailedValidationCheckWithErrors,
-          {
-            phoneNumber,
-            errors,
-          },
-        );
-        return;
-      }
-    }
-
     let newDestination = phoneNumber.replace(AREA_CODE, '');
     const sipDestination = `sip:${PREFIX_NUMBER}${newDestination}@${SIP_DOMAIN}`;
 
@@ -86,6 +75,5 @@ export const registerStartExternalColdTransfer = async () => {
         message: error.message,
       });
     }
-  },
-  );
+  });
 };
