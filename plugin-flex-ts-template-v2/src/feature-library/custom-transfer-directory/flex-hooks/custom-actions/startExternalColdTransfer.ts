@@ -66,7 +66,7 @@ export const registerStartExternalColdTransfer = async () => {
     try {
       await ProgrammableVoiceService.startColdTransfer(
         task?.attributes?.conference?.participants?.customer ?? task?.attributes?.call_sid,
-        sipDestination,
+        phoneNumber,
         callerId,
       );
     } catch (error: any) {

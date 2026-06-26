@@ -446,6 +446,9 @@
         "colas_permitidas": [
           "Outbound Email"
         ]
+      },
+      "post_call_survey": {
+        "enabled": false
       }
     }
   }
