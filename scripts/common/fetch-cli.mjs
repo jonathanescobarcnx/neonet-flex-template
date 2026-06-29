@@ -273,6 +273,25 @@ export const fetchSyncServices = async () => {
   );
 }
 
+export const fetchSyncMaps = async (serviceSid) => {
+  if (!serviceSid) {
+    console.warn("Sync service SID missing; unable to fetch sync maps");
+    return;
+  }
+  await fetchResources(
+    `sync-map`,
+    `Sync maps for service ${serviceSid}`,
+    async (client) => (await client.sync.v1.services(serviceSid).syncMaps.list()),
+    async (fetched, wanted, wantedResources) => {
+      if (isMatch(wantedResources[wanted].name, fetched.uniqueName, false)) {
+        resultCache[wanted] = fetched.sid;
+        return true;
+      }
+    },
+    serviceSid
+  );
+}
+
 export const fetchChatServices = async () => {
   await fetchResources(
     "chat-service",

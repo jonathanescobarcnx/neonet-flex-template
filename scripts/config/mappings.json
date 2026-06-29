@@ -62,5 +62,15 @@
     "type": "tr-workflow",
     "name": "/Internal Call/",
     "parent": "TWILIO_FLEX_WORKSPACE_SID"
+  },
+  "TWILIO_FLEX_POST_CALL_SURVEY_WORKFLOW_SID": {
+    "type": "tr-workflow",
+    "name": "/Post Call Survey/",
+    "parent": "TWILIO_FLEX_WORKSPACE_SID"
+  },
+  "TWILIO_FLEX_POST_CALL_SURVEY_SYNC_MAP_SID": {
+    "type": "sync-map",
+    "name": "/Post Call Survey/",
+    "parent": "TWILIO_FLEX_SYNC_SID"
   }
 }

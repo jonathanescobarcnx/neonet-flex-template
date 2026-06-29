@@ -93,6 +93,9 @@ const fillVar = async (key, envVars, environment) => {
     case "sync-service":
       await fetchCli.fetchSyncServices();
       break;
+    case "sync-map":
+      await fetchCli.fetchSyncMaps(envVars[parentKey]);
+      break;
     case "chat-service":
       await fetchCli.fetchChatServices();
       break;
