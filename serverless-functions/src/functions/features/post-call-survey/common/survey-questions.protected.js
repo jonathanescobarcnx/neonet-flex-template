@@ -1,5 +1,16 @@
 const TaskOperations = require(Runtime.getFunctions()['common/twilio-wrappers/taskrouter'].path);
 const { twilioExecute } = require(Runtime.getFunctions()['common/helpers/function-helper'].path);
+const AssetOps = require(Runtime.getFunctions()[
+  'features/post-call-survey/twilio-wrappers/serverless-assets'
+].path);
+
+function addPromptToTwiml(twimlNode, text, type, audioUrl) {
+  if (type === 'audio' && audioUrl) {
+    twimlNode.play(audioUrl);
+  } else if (text) {
+    twimlNode.say(text);
+  }
+}
 
 exports.handler = async (context, event, callback) => {
   console.log('PCS >> Incoming >>', event);
@@ -41,7 +52,7 @@ exports.handler = async (context, event, callback) => {
   console.log('survey:', survey);
 
   if (questionIndex === 0) {
-    twiml.say(survey.message_intro);
+    addPromptToTwiml(twiml, survey.message_intro, survey.message_intro_type, survey.message_intro_audio_url);
 
     const conversations = {
       conversation_id: taskSid,
@@ -72,7 +83,7 @@ exports.handler = async (context, event, callback) => {
     attributes = taskResult.data.attributes;
   } else {
     attributes.conversations[`conversation_label_${questionIndex}`] = survey.questions[questionIndex - 1].label;
-    attributes.conversations[`conversation_attribute_${questionIndex}`] = digits;
+    attributes.conversations[`conversation_measure_${questionIndex}`] = digits;
 
     const updateTaskResult = await TaskOperations.updateTask({
       taskSid: surveyTaskSid,
@@ -98,15 +109,18 @@ exports.handler = async (context, event, callback) => {
 
     attributes = updateTaskResult.data.attributes || attributes;
 
-    twiml.say(survey.message_end);
+    addPromptToTwiml(twiml, survey.message_end, survey.message_end_type, survey.message_end_audio_url);
   } else {
     const question = survey.questions[parseInt(questionIndex, 10)];
-    twiml.say(question.prompt);
+    addPromptToTwiml(twiml, question.prompt, question.prompt_type, question.prompt_audio_url);
     const nextQuestion = questionIndex + 1;
 
-    const nextUrl = `https://${
-      context.DOMAIN_NAME
-    }/features/post-call-survey/common/survey-questions?callSid=${callSid}&taskSid=${taskSid}&surveyKey=${surveyKey}&queueName=${queueName}&surveyTaskSid=${surveyTaskSid}&questionIndex=${nextQuestion}&attributes=${encodeURIComponent(
+    let callbackDomain = context.DOMAIN_NAME;
+    if (context.DOMAIN_NAME.startsWith('localhost')) {
+      const { domainName } = await AssetOps.getServiceDomain(context);
+      callbackDomain = domainName;
+    }
+    const nextUrl = `https://${callbackDomain}/features/post-call-survey/common/survey-questions?callSid=${callSid}&taskSid=${taskSid}&surveyKey=${surveyKey}&queueName=${queueName}&surveyTaskSid=${surveyTaskSid}&questionIndex=${nextQuestion}&attributes=${encodeURIComponent(
       JSON.stringify(attributes),
     )}`;
 

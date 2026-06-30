@@ -157,9 +157,6 @@ const RuleList: FC<RuleListProps> = (props) => {
     <Stack orientation="vertical" spacing="space70">
       <Box alignItems="center" display="flex">
         <Heading as="h2" variant="heading20" marginBottom="space0">
-          <span aria-label="survey image" role="img">
-            🎯
-          </span>{' '}
           Activation Rules
         </Heading>
         <Box marginLeft="auto">
@@ -173,7 +170,7 @@ const RuleList: FC<RuleListProps> = (props) => {
               onClick={props.handleNewRule}
               disabled={props.isLoading || props.surveys.length === 0}
             >
-              ✨ Add new rule
+              Add new rule
             </Button>
           </ButtonGroup>
         </Box>

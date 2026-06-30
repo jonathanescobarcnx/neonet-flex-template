@@ -17,7 +17,7 @@ const SurveyListEmpty: FC<SurveyListProps> = (props) => {
         <Stack orientation={'vertical'} spacing={'space70'}>
           <Flex hAlignContent={'center'}>
             <Heading as="h2" variant="heading20" marginBottom="space0">
-              🍿 Let's create your first survey
+              Let's create your first survey
             </Heading>
           </Flex>
           <Flex hAlignContent={'center'}>
@@ -25,7 +25,7 @@ const SurveyListEmpty: FC<SurveyListProps> = (props) => {
           </Flex>
           <Flex hAlignContent={'center'}>
             <Button variant="primary" onClick={props.handleNewSurvey} disabled={!props.canAddNew}>
-              ✨ Create new survey
+              Create new survey
             </Button>
           </Flex>
         </Stack>

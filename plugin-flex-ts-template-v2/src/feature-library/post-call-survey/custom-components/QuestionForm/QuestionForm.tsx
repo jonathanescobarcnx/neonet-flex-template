@@ -6,13 +6,15 @@ import { Form, FormControl, FormActions } from '@twilio-paste/core/form';
 import { Label } from '@twilio-paste/core/label';
 import { HelpText } from '@twilio-paste/core/help-text';
 import { TextArea } from '@twilio-paste/core/textarea';
+import { Radio, RadioGroup } from '@twilio-paste/core/radio-group';
 import { useUIDSeed } from '@twilio-paste/core/uid-library';
 import { FC, useEffect, useState } from 'react';
 
-import { ISurveyQuestion } from '../../types/SurveyQuestion';
+import { ISurveyQuestion, PromptMode } from '../../types/SurveyQuestion';
 import { AnswerOptions } from '../../types/AnswerOptions';
 import { answerToTypeMap } from '../../types/AnswerTypes';
 import EditButtonGroup from '../EditButtonGroup/EditButtonGroup';
+import AudioFilePicker from '../AudioFilePicker/AudioFilePicker';
 
 export interface QuestionFormProps {
   isSurveyDirty: boolean;
@@ -22,10 +24,12 @@ export interface QuestionFormProps {
   canDelete: boolean;
   question: ISurveyQuestion;
   index: number;
+  pendingPromptFile?: File;
   handleEditPress: () => void;
   handleAddPress: (index: number) => void;
   handleDeletePress: (index: number) => void;
   handleChange: (index: number, attribute: keyof ISurveyQuestion, value: string | AnswerOptions) => void;
+  onAudioFileSelected: (index: number, file: File) => void;
 }
 
 const QuestionForm: FC<QuestionFormProps> = (props) => {
@@ -36,10 +40,17 @@ const QuestionForm: FC<QuestionFormProps> = (props) => {
   const [answersHasError, setAnswersHasError] = useState(false);
 
   useEffect(() => {
-    setQuestionHasError(props.question.prompt === '');
+    const promptType = props.question.prompt_type ?? 'tts';
+    setQuestionHasError(promptType === 'tts' ? !props.question.prompt : !props.question.prompt_audio_url);
     setLabelHasError(props.question.label === '');
     setAnswersHasError(props.question.answers === '');
-  }, [props.question.prompt, props.question.label, props.question.answers]);
+  }, [
+    props.question.prompt,
+    props.question.prompt_type,
+    props.question.prompt_audio_url,
+    props.question.label,
+    props.question.answers,
+  ]);
 
   return (
     <Card>
@@ -75,20 +86,48 @@ const QuestionForm: FC<QuestionFormProps> = (props) => {
           <Label htmlFor={seed('prompt')} required>
             Question text
           </Label>
-          <TextArea
-            aria-describedby="prompt_help"
-            id={seed('prompt')}
-            name="prompt"
-            required={true}
-            readOnly={!props.isEditMode}
-            value={props.question.prompt}
-            onChange={(e) => props.handleChange(props.index, 'prompt', e.target.value)}
-            placeholder="e.g. On a scale from 1 to ... how likely are you to ..."
-            hasError={questionHasError}
-          />
-          <HelpText variant="default" id="prompt_help">
-            This text will be read out to the customer via text to speech.
-          </HelpText>
+          {props.isEditMode && (
+            <RadioGroup
+              name={`question_${props.index}_prompt_type`}
+              legend="Prompt type"
+              orientation="horizontal"
+              value={props.question.prompt_type ?? 'tts'}
+              onChange={(value) => props.handleChange(props.index, 'prompt_type', value as PromptMode)}
+            >
+              <Radio id={seed('prompt_tts')} value="tts">
+                Text to Speech
+              </Radio>
+              <Radio id={seed('prompt_audio')} value="audio">
+                Audio File
+              </Radio>
+            </RadioGroup>
+          )}
+          {(props.question.prompt_type ?? 'tts') === 'tts' ? (
+            <>
+              <TextArea
+                aria-describedby="prompt_help"
+                id={seed('prompt')}
+                name="prompt"
+                required={true}
+                readOnly={!props.isEditMode}
+                value={props.question.prompt}
+                onChange={(e) => props.handleChange(props.index, 'prompt', e.target.value)}
+                placeholder="e.g. On a scale from 1 to ... how likely are you to ..."
+                hasError={questionHasError}
+              />
+              <HelpText variant="default" id="prompt_help">
+                This text will be read out to the customer via text to speech.
+              </HelpText>
+            </>
+          ) : (
+            <AudioFilePicker
+              isReadOnly={!props.isEditMode}
+              currentUrl={props.question.prompt_audio_url}
+              pendingFile={props.pendingPromptFile}
+              onFileSelected={(file) => props.onAudioFileSelected(props.index, file)}
+              onError={(msg) => console.error(`Audio file error (question ${props.index}):`, msg)}
+            />
+          )}
         </FormControl>
 
         <FormControl>

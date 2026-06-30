@@ -113,9 +113,6 @@ const RuleEditor: FC<RuleEditorProps> = (props) => {
       <Stack orientation="vertical" spacing="space70">
         <Box alignItems="center" display="flex">
           <Heading as="h2" variant="heading20" marginBottom="space0">
-            <span aria-label="survey image" role="img">
-              📞
-            </span>{' '}
             Activation Rule
           </Heading>
           <Box marginLeft="auto">

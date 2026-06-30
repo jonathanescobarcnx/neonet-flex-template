@@ -1,29 +1,114 @@
-AI Context: Post-Call Survey Feature
-Overview
-The post-call-survey feature allows contact centers to seamlessly transfer a customer to an automated survey (typically a Twilio Studio Flow) after the agent finishes the conversation. Instead of disconnecting the customer when the agent ends the call, the feature intercepts the hang-up action, drops the agent's leg of the call, and redirects the customer's active call leg to a configured survey experience.
+# AI Context: Post-Call Survey Feature
 
-Frontend Architecture (plugin-flex-ts-template-v2/src/feature-library/post-call-survey)
-Following the template's standard architecture, this feature relies heavily on the Flex Actions Framework to modify default behavior without heavily modifying global files.
+## Purpose
+Intercepts the agent's "Hang Up" action and redirects the customer to an automated DTMF voice survey before disconnecting. Admins can create surveys, define questions, and map them to specific queues — all from within Flex.
 
-Flex Hooks (/flex-hooks/actions/):
-Action Interception: The feature registers a hook (typically beforeHangupCall or a custom transfer button action).
-Behavior Overwrite: When the agent attempts to end the call, the hook checks if the post-call survey feature is enabled via the flex-config. If enabled, it aborts the default hangup payload.
-API Service (/utils/ or /helpers/):
-The feature contains a utility class extending the standard ApiService (as defined in the template's core utilities).
-This class is responsible for taking context from the active task (e.g., callSid, taskSid, workerSid) and preparing an HTTP request to the Serverless backend to execute the routing change.
-Backend Integration (serverless-functions)
-Because frontend plugins cannot securely hold Twilio API credentials or perform sensitive account-level operations, the actual redirection of the call is handled by Twilio Serverless Node.js functions.
+---
 
-Serverless Endpoint:
-A dedicated function for the survey routing (e.g., /features/post-call-survey/...) is exposed on the serverless domain.
-Call Modification:
-Once the backend receives the request, it validates the Flex worker's JWT token to ensure the request is authorized.
-It utilizes the Twilio Node.js SDK to locate the specific Call Resource using the provided callSid.
-It performs an update on the Call Resource (client.calls(callSid).update(...)), pointing the url property to the TwiML or Studio Flow configured for the survey.
-How Frontend and Backend Connect (The Data Flow)
-Trigger: The agent clicks the "Hang Up" or "Send to Survey" button in the Flex UI.
-Intercept (Frontend): The flex-hooks/actions hook catches the event, stops the standard call termination, and grabs the callSid from the task payload.
-Request (Frontend to Backend): The frontend's ApiService sends a POST request to the Serverless backend, passing the callSid and any relevant metadata (like the agent's name or task attributes) so the survey can record who handled the call.
-Execution (Backend): The Serverless function securely updates the Twilio active call to redirect the customer leg to the Studio Flow webhook.
-Resolution (Backend to Frontend): The backend responds with a success status (200 OK).
-Wrap-up (Frontend): Upon receiving the success response, the frontend forces the agent's Flex UI to drop the call leg locally and moves the agent's task state to wrapup. The agent is freed to take notes, while the customer is now actively interacting with the IVR survey.
+## Frontend (`plugin-flex-ts-template-v2/src/feature-library/post-call-survey/`)
+
+### Core Hook — the trigger
+- `flex-hooks/events/beforeHangupCall.ts` — Intercepts `beforeHangupCall`, looks up a matching rule for the task's queue, and calls `surveyService.startSurvey()` if one is active.
+
+### Service Layer
+- `utils/SurveyService.ts` — All CRUD for surveys and rules (stored in Twilio Sync maps), plus `startSurvey(queueName, callSid, taskSid, surveyKey)` which POSTs to the serverless endpoint.
+- `utils/SyncHelper.ts` — Paginated Sync map item fetcher.
+
+### Admin UI (admin-only, role-gated via `utils/helpers.ts`)
+- `custom-components/PostCallSurveyView.tsx` — Root view, manages three phases: `SurveyList → SurveyEditor → RuleEditor`
+- `custom-components/SurveyDesigner.tsx` — Tabbed editor: general settings + up to 10 questions per survey
+- `custom-components/RuleEditor.tsx` — Maps a TaskRouter queue → survey, with active/inactive toggle
+- `custom-components/SurveyList.tsx` / `RuleList.tsx` — Tables with edit/delete actions
+- `flex-hooks/components/SideNav.tsx` — Adds admin link to Flex sidebar
+- `flex-hooks/components/ViewCollection.tsx` — Registers the "post-call-survey" view
+
+### Configuration
+- `config.ts` — Reads `features.post_call_survey` flags:
+  - `enabled`: boolean
+  - `survey_definitions_map_name`: Twilio Sync Map name (default: "Post Call Survey Definitions")
+  - `rule_definitions_map_name`: Twilio Sync Map name (default: "Post Call Survey Rules")
+
+### Notifications
+- `flex-hooks/notifications/index.ts` — Defines `SAVE_ERROR`, `SAVE_SUCCESS`, `SAVE_DISABLED`, `SYNC_ERROR`
+
+### i18n
+- `flex-hooks/strings/index.ts` — EN-US primary + ES-ES, ES-MX, PT-BR, TH, ZH-HANS translations
+
+---
+
+## Key Types (`/types/`)
+
+| Type | Description |
+|------|-------------|
+| `SurveyDefinition` | intro/end messages + array of `SurveyQuestion` |
+| `SurveyQuestion` | label (≤30 chars), TTS prompt, `AnswerOptions` (DTMF 0–9 enabled/disabled) |
+| `AnswerTypes` | Presets: Yes/No (1-2), 1-3 scale, 1-5 star, 0-9 NPS |
+| `RuleDefinition` | `queue_name → survey_key` + `active` flag |
+| `SurveyItem` / `RuleItem` | Sync map wrappers with metadata (created_by, date_created, date_updated, etc.) |
+| `Phase` | Navigation phases: SurveyList, SurveyEditor, RuleEditor |
+
+All surveys and rules are stored in Twilio Sync maps.
+
+---
+
+## Serverless Backend (`serverless-functions/src/functions/features/post-call-survey/`)
+
+### `flex/start-voice-survey.js`
+- **Endpoint:** `POST /features/post-call-survey/flex/start-voice-survey`
+- **Receives:** `queueName`, `callSid`, `taskSid`, `surveyKey`, `Token`
+- **Action:** Calls `client.calls(callSid).update({ url: surveyUrl })` — redirects the live call to the `survey-questions` endpoint
+
+### `common/survey-questions.protected.js` — survey state machine
+Handles DTMF interactions throughout the survey playback:
+
+| `questionIndex` | Behavior |
+|---|---|
+| `0` | Plays intro message; creates a new TaskRouter task (kind: `Survey`) to track responses in Flex Insights |
+| `1…n-1` | Records previous DTMF digit as `conversation_attribute_X` / `conversation_label_X` on the task; plays next question via TwiML `<Gather>` |
+| `=== total` | Plays end message; marks task `abandoned: 'No'`; cancels the survey task |
+
+- Timeout per question: 10 seconds
+- Digits per response: 1
+- Task attributes tracked: `conversation_id` (original taskSid), `queue`, `virtual`, `abandoned`, timing fields, `kind: 'Survey'`
+
+---
+
+## End-to-End Data Flow
+
+```
+Agent clicks Hang Up
+  → beforeHangupCall hook fires
+  → Rule lookup by queueName (from Sync map)
+  → If active rule found: POST /flex/start-voice-survey
+      → Twilio Calls API redirects customer call leg to survey-questions
+          → New TaskRouter task created (surveyKey, timing metadata)
+          → Customer answers DTMF per question
+          → Responses stored as task attributes (visible in Flex Insights)
+          → Survey task canceled on completion
+  → Original agent task proceeds to wrap-up
+```
+
+---
+
+## Admin UI Workflow
+
+1. Admin navigates via sidebar button → "Post Call Survey Settings"
+2. **Survey Management:** Create/edit/delete surveys with name, welcome prompt, end prompt, and up to 10 questions
+3. **Rule Management:** Map TaskRouter queues to surveys, set active/inactive status
+4. Data persists to Twilio Sync maps; all agents see the same configuration
+
+---
+
+## Key Files at a Glance
+
+| File | Purpose |
+|------|---------|
+| `index.ts` | Feature registration & conditional loading |
+| `config.ts` | Feature flag retrieval |
+| `utils/SurveyService.ts` | Survey/rule CRUD + serverless integration |
+| `flex-hooks/events/beforeHangupCall.ts` | Core: intercepts hangup, starts survey |
+| `custom-components/PostCallSurveyView.tsx` | Admin UI root component |
+| `custom-components/SurveyDesigner.tsx` | Survey editor with tabbed questions |
+| `custom-components/RuleEditor.tsx` | Queue→Survey mapping UI |
+| `serverless/flex/start-voice-survey.js` | Updates call to point to survey flow |
+| `serverless/common/survey-questions.protected.js` | Handles DTMF collection & task tracking |

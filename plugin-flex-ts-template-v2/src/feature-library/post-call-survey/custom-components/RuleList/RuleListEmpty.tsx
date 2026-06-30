@@ -17,7 +17,7 @@ const RuleListEmpty: FC<RuleListEmptyProps> = (props) => {
         <Stack orientation={'vertical'} spacing={'space70'}>
           <Flex hAlignContent={'center'}>
             <Heading as="h2" variant="heading20" marginBottom="space0">
-              {props.canAddNew ? "✨ Now let's create an activation rule" : '🍩 No Activation Rules'}
+              {props.canAddNew ? "Now let's create an activation rule" : 'No Activation Rules'}
             </Heading>
           </Flex>
           <Flex hAlignContent={'center'}>
@@ -27,7 +27,7 @@ const RuleListEmpty: FC<RuleListEmptyProps> = (props) => {
           </Flex>
           <Flex hAlignContent={'center'}>
             <Button variant="primary" onClick={props.handleNewRule} disabled={!props.canAddNew}>
-              ✨ Create new activation rule
+              Create new activation rule
             </Button>
           </Flex>
         </Stack>

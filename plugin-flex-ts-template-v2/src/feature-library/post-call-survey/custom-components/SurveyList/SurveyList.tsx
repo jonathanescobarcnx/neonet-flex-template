@@ -137,9 +137,6 @@ const SurveyList: FC<SurveyListProps> = (props) => {
     <Stack orientation="vertical" spacing="space70">
       <Box alignItems="center" display="flex">
         <Heading as="h2" variant="heading20" marginBottom="space0">
-          <span aria-label="survey image" role="img">
-            📞
-          </span>{' '}
           Survey List
         </Heading>
         <Box marginLeft="auto">
@@ -149,7 +146,7 @@ const SurveyList: FC<SurveyListProps> = (props) => {
               Refresh
             </Button>
             <Button variant="primary" onClick={props.handleNewSurvey} disabled={props.isLoading}>
-              ✨ Add new survey
+               Add new survey
             </Button>
           </ButtonGroup>
         </Box>

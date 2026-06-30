@@ -13,7 +13,7 @@ import { ISurveyQuestion, SurveyQuestion } from '../../types/SurveyQuestion';
 import { ISurveyDefinition } from '../../types/SurveyDefinition';
 import { SurveyItem } from '../../types/SurveyItem';
 import ConfirmationModal from '../ConfirmationModal/ConfirmationModal';
-import SurveyService from '../../utils/SurveyService';
+import SurveyService, { PendingAudioFile, UploadStage } from '../../utils/SurveyService';
 import GeneralForm from '../GeneralForm/GeneralForm';
 import QuestionForm from '../QuestionForm/QuestionForm';
 import { useDesignerTabState } from '../../utils/Hooks';
@@ -24,8 +24,23 @@ export interface SurveyDesignerProps {
   handleHomePress: () => void;
 }
 
+interface PendingAudioFiles {
+  message_intro?: File;
+  message_end?: File;
+  questions: Record<number, File>;
+}
+
+const UPLOAD_STAGE_LABELS: Record<UploadStage, string> = {
+  uploading: 'Uploading audio files…',
+  building: 'Creating deployment build…',
+  deploying: 'Deploying to Twilio (this may take ~60s)…',
+  saving: 'Saving survey…',
+};
+
 const SurveyDesigner: FC<SurveyDesignerProps> = (props) => {
   const [surveyDefinition, setSurveyDefinition] = useState<ISurveyDefinition>(props.survey.data);
+  const [pendingAudioFiles, setPendingAudioFiles] = useState<PendingAudioFiles>({ questions: {} });
+  const [saveProgress, setSaveProgress] = useState<string>('');
 
   const tabState = useDesignerTabState();
   const [isDirty, setIsDirty] = useState<boolean>(false);
@@ -36,19 +51,57 @@ const SurveyDesigner: FC<SurveyDesignerProps> = (props) => {
   const [saveConfirmationIsOpen, setSaveConfirmationIsOpen] = useState(false);
   const [deleteSurveyConfirmationIsOpen, setDeleteSurveyConfirmationIsOpen] = useState(false);
   const [deleteQuestionConfirmationIsOpen, setDeleteQuestionConfirmationIsOpen] = useState(false);
-
   const [editConfirmationIsOpen, setEditConfirmationIsOpen] = useState(false);
 
   const toaster = useToaster();
 
   useEffect(() => {
     setHasError(false);
-    if (surveyDefinition.name === '' || surveyDefinition.message_intro === '' || surveyDefinition.message_end === '')
-      setHasError(true);
-    surveyDefinition.questions.forEach((q) => {
-      if (q.label === '' || q.prompt === '' || q.answers === '') setHasError(true);
+    if (!surveyDefinition.name) { setHasError(true); return; }
+
+    const introType = surveyDefinition.message_intro_type ?? 'tts';
+    const introValid = introType === 'tts'
+      ? !!surveyDefinition.message_intro
+      : !!(surveyDefinition.message_intro_audio_url || pendingAudioFiles.message_intro);
+    if (!introValid) { setHasError(true); return; }
+
+    const endType = surveyDefinition.message_end_type ?? 'tts';
+    const endValid = endType === 'tts'
+      ? !!surveyDefinition.message_end
+      : !!(surveyDefinition.message_end_audio_url || pendingAudioFiles.message_end);
+    if (!endValid) { setHasError(true); return; }
+
+    for (let i = 0; i < surveyDefinition.questions.length; i++) {
+      const q = surveyDefinition.questions[i];
+      if (!q.label || !q.answers) { setHasError(true); return; }
+      const promptType = q.prompt_type ?? 'tts';
+      const promptValid = promptType === 'tts'
+        ? !!q.prompt
+        : !!(q.prompt_audio_url || pendingAudioFiles.questions[i]);
+      if (!promptValid) { setHasError(true); return; }
+    }
+  }, [surveyDefinition, pendingAudioFiles]);
+
+  const buildPendingFilesList = (): PendingAudioFile[] => {
+    const key = props.survey.key;
+    const files: PendingAudioFile[] = [];
+
+    if (pendingAudioFiles.message_intro) {
+      const ext = pendingAudioFiles.message_intro.type === 'audio/mpeg' ? 'mp3' : 'wav';
+      files.push({ fieldPath: 'message_intro', assetPath: `/survey-audio/${key}_message_intro.${ext}`, file: pendingAudioFiles.message_intro });
+    }
+    if (pendingAudioFiles.message_end) {
+      const ext = pendingAudioFiles.message_end.type === 'audio/mpeg' ? 'mp3' : 'wav';
+      files.push({ fieldPath: 'message_end', assetPath: `/survey-audio/${key}_message_end.${ext}`, file: pendingAudioFiles.message_end });
+    }
+    Object.entries(pendingAudioFiles.questions).forEach(([idx, file]) => {
+      const n = Number(idx);
+      const ext = file.type === 'audio/mpeg' ? 'mp3' : 'wav';
+      files.push({ fieldPath: `question_${n}`, assetPath: `/survey-audio/${key}_question_${n}_prompt.${ext}`, file });
     });
-  }, [surveyDefinition]);
+
+    return files;
+  };
 
   const handleNewQuestion = () => {
     setSurveyDefinition((prev) => {
@@ -59,7 +112,6 @@ const SurveyDesigner: FC<SurveyDesignerProps> = (props) => {
   };
 
   const handleEditPress = () => {
-    console.log('Editing general question');
     setEditConfirmationIsOpen(true);
   };
 
@@ -74,19 +126,11 @@ const SurveyDesigner: FC<SurveyDesignerProps> = (props) => {
       .then(() => {
         setIsDirty(false);
         setDeleteSurveyConfirmationIsOpen(false);
-        toaster.push({
-          message: 'Survey deleted successfully',
-          variant: 'success',
-          dismissAfter: 5000,
-        });
+        toaster.push({ message: 'Survey deleted successfully', variant: 'success', dismissAfter: 5000 });
       })
       .catch((err: any) => {
         console.warn(err);
-        toaster.push({
-          message: 'Error deleting survey, please check logs and check logs',
-          variant: 'error',
-          dismissAfter: 5000,
-        });
+        toaster.push({ message: 'Error deleting survey, please check logs', variant: 'error', dismissAfter: 5000 });
       })
       .finally(() => {
         setIsProcessing(false);
@@ -103,31 +147,36 @@ const SurveyDesigner: FC<SurveyDesignerProps> = (props) => {
     setIsDirty(true);
     setSurveyDefinition((prev) => {
       const target: ISurveyDefinition = { ...prev };
-      const newQuestions = target.questions.filter((v, idx) => idx !== index);
-      target.questions = newQuestions;
+      target.questions = target.questions.filter((_, idx) => idx !== index);
       return target;
+    });
+    // Also clear any pending file for the deleted question
+    setPendingAudioFiles((prev) => {
+      const updatedQuestions = { ...prev.questions };
+      delete updatedQuestions[index];
+      return { ...prev, questions: updatedQuestions };
     });
   };
 
   const handleSaveAction = () => {
     setIsProcessing(true);
-    SurveyService.saveSurvey(props.survey.key, surveyDefinition)
-      .then(() => {
+    const pendingFiles = buildPendingFilesList();
+
+    SurveyService.uploadAndSaveSurvey(props.survey.key, surveyDefinition, pendingFiles, (stage) => {
+      setSaveProgress(UPLOAD_STAGE_LABELS[stage]);
+    })
+      .then((updatedSurvey) => {
+        setSurveyDefinition(updatedSurvey);
+        setPendingAudioFiles({ questions: {} });
         setIsDirty(false);
         setSaveConfirmationIsOpen(false);
-        toaster.push({
-          message: 'Survey saved successfully',
-          variant: 'success',
-          dismissAfter: 5000,
-        });
+        setSaveProgress('');
+        toaster.push({ message: 'Survey saved successfully', variant: 'success', dismissAfter: 5000 });
       })
       .catch((err) => {
         console.warn(err);
-        toaster.push({
-          message: 'Error saving survey, please check logs and check logs',
-          variant: 'error',
-          dismissAfter: 5000,
-        });
+        setSaveProgress('');
+        toaster.push({ message: 'Error saving survey, please check logs', variant: 'error', dismissAfter: 5000 });
       })
       .finally(() => {
         setIsProcessing(false);
@@ -136,9 +185,17 @@ const SurveyDesigner: FC<SurveyDesignerProps> = (props) => {
 
   const handleGeneralChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setSurveyDefinition((prev) => {
-      return { ...prev, [name]: value };
-    });
+    setSurveyDefinition((prev) => ({ ...prev, [name]: value }));
+    setIsDirty(true);
+  };
+
+  const handleGeneralDirectChange = (field: keyof ISurveyDefinition, value: string) => {
+    setSurveyDefinition((prev) => ({ ...prev, [field]: value }));
+    setIsDirty(true);
+  };
+
+  const handleGeneralAudioFileSelected = (field: 'message_intro' | 'message_end', file: File) => {
+    setPendingAudioFiles((prev) => ({ ...prev, [field]: file }));
     setIsDirty(true);
   };
 
@@ -149,10 +206,18 @@ const SurveyDesigner: FC<SurveyDesignerProps> = (props) => {
       if (attribute === 'answer_options') {
         target.questions[index][attribute] = value as AnswerOptions;
       } else {
-        target.questions[index][attribute] = value as string;
+        (target.questions[index] as unknown as Record<string, unknown>)[attribute as string] = value;
       }
       return target;
     });
+    setIsDirty(true);
+  };
+
+  const handleQuestionAudioFileSelected = (index: number, file: File) => {
+    setPendingAudioFiles((prev) => ({
+      ...prev,
+      questions: { ...prev.questions, [index]: file },
+    }));
     setIsDirty(true);
   };
 
@@ -201,8 +266,12 @@ const SurveyDesigner: FC<SurveyDesignerProps> = (props) => {
               canAddNew={surveyDefinition.questions.length < 10}
               handleAddPress={handleNewQuestion}
               handleChange={handleGeneralChange}
+              handleDirectChange={handleGeneralDirectChange}
               handleDeletePress={() => setDeleteSurveyConfirmationIsOpen(true)}
               handleEditPress={handleEditPress}
+              pendingIntroFile={pendingAudioFiles.message_intro}
+              pendingEndFile={pendingAudioFiles.message_end}
+              onAudioFileSelected={handleGeneralAudioFileSelected}
             />
           </TabPanel>
 
@@ -220,6 +289,8 @@ const SurveyDesigner: FC<SurveyDesignerProps> = (props) => {
                 handleDeletePress={handleDeleteQuestionPress}
                 handleChange={handleQuestionChange}
                 handleEditPress={handleEditPress}
+                pendingPromptFile={pendingAudioFiles.questions[idx]}
+                onAudioFileSelected={handleQuestionAudioFileSelected}
               />
             </TabPanel>
           ))}
@@ -230,7 +301,13 @@ const SurveyDesigner: FC<SurveyDesignerProps> = (props) => {
         isOpen={saveConfirmationIsOpen}
         isProcessingAction={isProcessing}
         modalHeader={'Save and Activate'}
-        modalBody={<Text as={'p'}>Are you sure you wish to save the survey and make it active?</Text>}
+        modalBody={
+          <Text as={'p'}>
+            {isProcessing
+              ? saveProgress || 'Saving…'
+              : 'Are you sure you wish to save the survey and make it active?'}
+          </Text>
+        }
         actionLabel={'Save'}
         actionIsDestructive={false}
         handleConfirmAction={handleSaveAction}
