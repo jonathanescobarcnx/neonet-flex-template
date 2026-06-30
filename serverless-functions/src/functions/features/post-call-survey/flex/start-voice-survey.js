@@ -14,7 +14,7 @@ const requiredParameters = [
 exports.handler = prepareFlexFunction(requiredParameters, async (context, event, callback, response, handleError) => {
   try {
     console.log('start-voice-survey');
-    const { queueName, callSid, taskSid, surveyKey } = event;
+    const { queueName, callSid, taskSid, surveyKey, channelType = '', reservationSid = '', caller = '', workerEmail = '' } = event;
 
     // Twilio's servers cannot reach localhost. When running locally, resolve the
     // real deployed *.twil.io domain so Twilio can invoke the survey-questions callback.
@@ -24,7 +24,7 @@ exports.handler = prepareFlexFunction(requiredParameters, async (context, event,
       callbackDomain = domainName;
     }
 
-    const url = `https://${callbackDomain}/features/post-call-survey/common/survey-questions?queueName=${queueName}&callSid=${callSid}&taskSid=${taskSid}&surveyKey=${surveyKey}&questionIndex=0`;
+    const url = `https://${callbackDomain}/features/post-call-survey/common/survey-questions?queueName=${queueName}&callSid=${callSid}&taskSid=${taskSid}&surveyKey=${surveyKey}&channelType=${encodeURIComponent(channelType)}&reservationSid=${encodeURIComponent(reservationSid)}&caller=${encodeURIComponent(caller)}&workerEmail=${encodeURIComponent(workerEmail)}&questionIndex=0`;
     console.log(url);
 
     const params = {

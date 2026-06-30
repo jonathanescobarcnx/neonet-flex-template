@@ -1,8 +1,5 @@
 const TaskOperations = require(Runtime.getFunctions()['common/twilio-wrappers/taskrouter'].path);
 const { twilioExecute } = require(Runtime.getFunctions()['common/helpers/function-helper'].path);
-const AssetOps = require(Runtime.getFunctions()[
-  'features/post-call-survey/twilio-wrappers/serverless-assets'
-].path);
 
 function addPromptToTwiml(twimlNode, text, type, audioUrl) {
   if (type === 'audio' && audioUrl) {
@@ -18,6 +15,10 @@ exports.handler = async (context, event, callback) => {
   const twiml = new Twilio.twiml.VoiceResponse();
 
   const { queueName, callSid, taskSid, surveyKey, Digits } = event;
+  const channelType = decodeURIComponent(event.channelType || '');
+  const reservationSid = decodeURIComponent(event.reservationSid || '');
+  const caller = decodeURIComponent(event.caller || '');
+  const workerEmail = decodeURIComponent(event.workerEmail || '');
   let { questionIndex, surveyTaskSid, attributes } = event;
 
   questionIndex = parseInt(questionIndex, 10);
@@ -55,16 +56,26 @@ exports.handler = async (context, event, callback) => {
     addPromptToTwiml(twiml, survey.message_intro, survey.message_intro_type, survey.message_intro_audio_url);
 
     const conversations = {
+      abandoned: 'Yes',
+      communication_channel: 'Survey',
+      kind: 'Survey',
+      content: 'Post Task Survey',
       conversation_id: taskSid,
+      direction: 'Inbound',
+      initiated_by: 'Customer',
+      conversation_attribute_1: callSid,
+      conversation_attribute_2: channelType,
+      conversation_attribute_3: reservationSid,
+      conversation_attribute_4: caller,
+      conversation_attribute_5: queueName,
+      conversation_attribute_6: workerEmail,
       queue: queueName,
       virtual: 'Yes',
-      abandoned: 'Yes',
       ivr_time: 0,
       talk_time: 0,
       ring_time: 0,
       queue_time: 0,
       wrap_up_time: 0,
-      kind: 'Survey',
     };
 
     attributes.conversations = conversations;
@@ -83,7 +94,7 @@ exports.handler = async (context, event, callback) => {
     attributes = taskResult.data.attributes;
   } else {
     attributes.conversations[`conversation_label_${questionIndex}`] = survey.questions[questionIndex - 1].label;
-    attributes.conversations[`conversation_measure_${questionIndex}`] = digits;
+    attributes.conversations[`conversation_measure_${questionIndex}`] = Number.isNaN(digits) ? null : digits;
 
     const updateTaskResult = await TaskOperations.updateTask({
       taskSid: surveyTaskSid,
@@ -95,6 +106,7 @@ exports.handler = async (context, event, callback) => {
 
   if (questionIndex === survey.questions.length) {
     attributes.conversations.abandoned = 'No';
+    attributes.conversations.outcome = 'Survey Complete';
     console.log('taskSid', taskSid);
 
     const updateTaskResult = await TaskOperations.updateTask({
@@ -116,11 +128,8 @@ exports.handler = async (context, event, callback) => {
     const nextQuestion = questionIndex + 1;
 
     let callbackDomain = context.DOMAIN_NAME;
-    if (context.DOMAIN_NAME.startsWith('localhost')) {
-      const { domainName } = await AssetOps.getServiceDomain(context);
-      callbackDomain = domainName;
-    }
-    const nextUrl = `https://${callbackDomain}/features/post-call-survey/common/survey-questions?callSid=${callSid}&taskSid=${taskSid}&surveyKey=${surveyKey}&queueName=${queueName}&surveyTaskSid=${surveyTaskSid}&questionIndex=${nextQuestion}&attributes=${encodeURIComponent(
+
+    const nextUrl = `https://${callbackDomain}/features/post-call-survey/common/survey-questions?callSid=${callSid}&taskSid=${taskSid}&surveyKey=${surveyKey}&queueName=${queueName}&channelType=${encodeURIComponent(channelType)}&reservationSid=${encodeURIComponent(reservationSid)}&caller=${encodeURIComponent(caller)}&workerEmail=${encodeURIComponent(workerEmail)}&surveyTaskSid=${surveyTaskSid}&questionIndex=${nextQuestion}&attributes=${encodeURIComponent(
       JSON.stringify(attributes),
     )}`;
 
@@ -129,6 +138,7 @@ exports.handler = async (context, event, callback) => {
     twiml.gather({
       timeout: 10,
       numDigits: 1,
+      bargeIn: true,
       method: 'POST',
       action: nextUrl,
     });

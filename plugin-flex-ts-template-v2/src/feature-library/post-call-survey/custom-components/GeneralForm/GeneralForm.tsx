@@ -116,13 +116,27 @@ const GeneralForm: FC<GeneralFormProps> = (props) => {
               </HelpText>
             </>
           ) : (
-            <AudioFilePicker
-              isReadOnly={!props.isEditMode}
-              currentUrl={props.survey.message_intro_audio_url}
-              pendingFile={props.pendingIntroFile}
-              onFileSelected={(file) => props.onAudioFileSelected('message_intro', file)}
-              onError={(msg) => console.error('Audio file error (intro):', msg)}
-            />
+            <>
+              <AudioFilePicker
+                isReadOnly={!props.isEditMode}
+                currentUrl={props.survey.message_intro_audio_url}
+                pendingFile={props.pendingIntroFile}
+                onFileSelected={(file) => props.onAudioFileSelected('message_intro', file)}
+                onError={(msg) => console.error('Audio file error (intro):', msg)}
+              />
+              <Label htmlFor={seed('message_intro_transcription')}>Audio transcription</Label>
+              <TextArea
+                id={seed('message_intro_transcription')}
+                name="message_intro"
+                onChange={props.handleChange}
+                readOnly={!props.isEditMode}
+                value={props.survey.message_intro}
+                placeholder="Paste the transcript of the audio file here (optional)"
+              />
+              <HelpText variant="default">
+                Text transcript of the audio file for reference
+              </HelpText>
+            </>
           )}
         </FormControl>
 
@@ -163,13 +177,27 @@ const GeneralForm: FC<GeneralFormProps> = (props) => {
               </HelpText>
             </>
           ) : (
-            <AudioFilePicker
-              isReadOnly={!props.isEditMode}
-              currentUrl={props.survey.message_end_audio_url}
-              pendingFile={props.pendingEndFile}
-              onFileSelected={(file) => props.onAudioFileSelected('message_end', file)}
-              onError={(msg) => console.error('Audio file error (end):', msg)}
-            />
+            <>
+              <AudioFilePicker
+                isReadOnly={!props.isEditMode}
+                currentUrl={props.survey.message_end_audio_url}
+                pendingFile={props.pendingEndFile}
+                onFileSelected={(file) => props.onAudioFileSelected('message_end', file)}
+                onError={(msg) => console.error('Audio file error (end):', msg)}
+              />
+              <Label htmlFor={seed('message_end_transcription')}>Audio transcription</Label>
+              <TextArea
+                id={seed('message_end_transcription')}
+                name="message_end"
+                onChange={props.handleChange}
+                readOnly={!props.isEditMode}
+                value={props.survey.message_end}
+                placeholder="Paste the transcript of the audio file here (optional)"
+              />
+              <HelpText variant="default">
+                Text transcript of the audio file for reference
+              </HelpText>
+            </>
           )}
         </FormControl>
 

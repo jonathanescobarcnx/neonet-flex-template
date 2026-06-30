@@ -120,13 +120,27 @@ const QuestionForm: FC<QuestionFormProps> = (props) => {
               </HelpText>
             </>
           ) : (
-            <AudioFilePicker
-              isReadOnly={!props.isEditMode}
-              currentUrl={props.question.prompt_audio_url}
-              pendingFile={props.pendingPromptFile}
-              onFileSelected={(file) => props.onAudioFileSelected(props.index, file)}
-              onError={(msg) => console.error(`Audio file error (question ${props.index}):`, msg)}
-            />
+            <>
+              <AudioFilePicker
+                isReadOnly={!props.isEditMode}
+                currentUrl={props.question.prompt_audio_url}
+                pendingFile={props.pendingPromptFile}
+                onFileSelected={(file) => props.onAudioFileSelected(props.index, file)}
+                onError={(msg) => console.error(`Audio file error (question ${props.index}):`, msg)}
+              />
+              <Label htmlFor={seed('prompt_transcription')}>Audio transcription</Label>
+              <TextArea
+                id={seed('prompt_transcription')}
+                name="prompt"
+                readOnly={!props.isEditMode}
+                value={props.question.prompt}
+                onChange={(e) => props.handleChange(props.index, 'prompt', e.target.value)}
+                placeholder="Paste the transcript of the audio file here (optional)"
+              />
+              <HelpText variant="default">
+                Text transcript of the audio file for reference
+              </HelpText>
+            </>
           )}
         </FormControl>
 

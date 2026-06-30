@@ -33,13 +33,26 @@ class SurveyService extends ApiService {
     });
   };
 
-  startSurvey = async (queueName: string, callSid: string, taskSid: string, surveyKey: string) => {
+  startSurvey = async (
+    queueName: string,
+    callSid: string,
+    taskSid: string,
+    surveyKey: string,
+    channelType: string,
+    reservationSid: string,
+    caller: string,
+    workerEmail: string,
+  ) => {
     return new Promise((resolve, reject) => {
       const encodedParams: EncodedParams = {
         queueName: encodeURIComponent(queueName),
         callSid: encodeURIComponent(callSid),
         taskSid: encodeURIComponent(taskSid),
         surveyKey: encodeURIComponent(surveyKey),
+        channelType: encodeURIComponent(channelType),
+        reservationSid: encodeURIComponent(reservationSid),
+        caller: encodeURIComponent(caller),
+        workerEmail: encodeURIComponent(workerEmail),
         Token: encodeURIComponent(this.manager.user.token),
       };
 
