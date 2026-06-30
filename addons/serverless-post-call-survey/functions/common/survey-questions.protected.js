@@ -93,7 +93,6 @@ exports.handler = async (context, event, callback) => {
     console.log(`Survey task SID: ${surveyTaskSid}`);
     attributes = taskResult.data.attributes;
   } else {
-    attributes.conversations[`conversation_label_${questionIndex}`] = survey.questions[questionIndex - 1].label;
     attributes.conversations[`conversation_measure_${questionIndex}`] = Number.isNaN(digits) ? null : digits;
 
     const updateTaskResult = await TaskOperations.updateTask({
