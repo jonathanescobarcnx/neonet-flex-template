@@ -72,5 +72,9 @@
     "type": "sync-map",
     "name": "/Post Call Survey/",
     "parent": "TWILIO_FLEX_SYNC_SID"
+  },
+  "POST_CALL_SURVEY_DOMAIN": {
+    "type": "serverless-domain",
+    "name": "post-call-survey"
   }
 }

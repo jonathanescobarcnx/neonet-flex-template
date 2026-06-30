@@ -124,7 +124,7 @@ exports.createBuildWithVersions = async ({ context, newAssetVersionSids }) => {
     const build = await client.serverless.v1.services(serviceSid).builds.create({
       assetVersions: mergedAssetVersions,
       functionVersions: existingFunctionVersions,
-      dependencies,
+      dependencies: JSON.stringify(dependencies),
     });
 
     return { success: true, status: 200, buildSid: build.sid };
