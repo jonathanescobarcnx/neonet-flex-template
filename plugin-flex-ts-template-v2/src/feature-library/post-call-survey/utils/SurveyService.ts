@@ -62,7 +62,7 @@ class SurveyService extends ApiService {
       };
 
       this.fetchJsonWithReject<any>(
-        `${this.pcsBase}/flex/start-voice-survey`,
+        `https://${this.pcsBase}/flex/start-voice-survey`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -190,7 +190,7 @@ class SurveyService extends ApiService {
           Token: encodeURIComponent(this.manager.user.token),
         };
         this.fetchJsonWithReject<{ assetVersionSid: string; pendingUrl: string }>(
-          `${this.pcsBase}/flex/upload-audio`,
+          `https://${this.pcsBase}/flex/upload-audio`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -211,7 +211,7 @@ class SurveyService extends ApiService {
       Token: encodeURIComponent(this.manager.user.token),
     };
     return this.fetchJsonWithReject<{ buildSid: string }>(
-      `${this.pcsBase}/flex/create-build`,
+      `https://${this.pcsBase}/flex/create-build`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -234,7 +234,7 @@ class SurveyService extends ApiService {
       };
 
       const result = await this.fetchJsonWithReject<{ status: string }>(
-        `${this.pcsBase}/flex/check-deployment-status`,
+        `https://${this.pcsBase}/flex/check-deployment-status`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },

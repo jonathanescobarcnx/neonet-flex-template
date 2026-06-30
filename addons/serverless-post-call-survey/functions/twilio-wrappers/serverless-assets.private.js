@@ -15,11 +15,19 @@ const discoverServiceIds = async (context) => {
     return { serviceSid: _cachedServiceSid, environmentSid: _cachedEnvironmentSid, domainName: _cachedDomainName };
   }
 
-  if (context.SERVICE_SID && context.ENVIRONMENT_SID) {
+  if (context.DOMAIN_NAME.startsWith('localhost')) {
+    // Local dev: Twilio cannot match localhost to a deployed environment.
+    // SERVICE_SID and ENVIRONMENT_SID must be set explicitly in .env.
+    if (!context.SERVICE_SID || !context.ENVIRONMENT_SID) {
+      throw new Error(
+        'Audio upload requires SERVICE_SID and ENVIRONMENT_SID in your .env file when running locally. ' +
+          'Find them in the Twilio Console under Functions & Assets > your serverless service.',
+      );
+    }
     _cachedServiceSid = context.SERVICE_SID;
     _cachedEnvironmentSid = context.ENVIRONMENT_SID;
 
-    // Fetch the actual environment domain so asset URLs are correct even in local dev.
+    // Fetch the actual environment domain so asset URLs resolve correctly.
     const client = context.getTwilioClient();
     const env = await client.serverless.v1
       .services(_cachedServiceSid)
@@ -30,16 +38,9 @@ const discoverServiceIds = async (context) => {
     return { serviceSid: _cachedServiceSid, environmentSid: _cachedEnvironmentSid, domainName: _cachedDomainName };
   }
 
-  // Local dev without explicit SIDs: Twilio cannot match localhost to a deployed environment.
-  // Add SERVICE_SID and ENVIRONMENT_SID to your .env file.
-  if (context.DOMAIN_NAME.startsWith('localhost')) {
-    throw new Error(
-      'Audio upload requires SERVICE_SID and ENVIRONMENT_SID in your .env file when running locally. ' +
-        'Find them in the Twilio Console under Functions & Assets > your serverless service.',
-    );
-  }
-
-  // Production: discover by matching the deployed environment domain
+  // Production: auto-discover by matching the deployed environment domain.
+  // Never use SERVICE_SID/ENVIRONMENT_SID from .env here — they may be placeholder
+  // values that override what Twilio would otherwise auto-inject.
   const client = context.getTwilioClient();
   const services = await client.serverless.v1.services.list({ limit: 50 });
 
