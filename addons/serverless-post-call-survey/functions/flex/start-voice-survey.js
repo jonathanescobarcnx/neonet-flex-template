@@ -1,7 +1,5 @@
 const { prepareFlexFunction, twilioExecute } = require(Runtime.getFunctions()['common/helpers/function-helper'].path);
-const AssetOps = require(Runtime.getFunctions()[
-  'features/post-call-survey/twilio-wrappers/serverless-assets'
-].path);
+const AssetOps = require(Runtime.getFunctions()['twilio-wrappers/serverless-assets'].path);
 
 const requiredParameters = [
   { key: 'queueName', purpose: 'The Queue that handled the call' },
@@ -24,7 +22,7 @@ exports.handler = prepareFlexFunction(requiredParameters, async (context, event,
       callbackDomain = domainName;
     }
 
-    const url = `https://${callbackDomain}/features/post-call-survey/common/survey-questions?queueName=${queueName}&callSid=${callSid}&taskSid=${taskSid}&surveyKey=${surveyKey}&channelType=${encodeURIComponent(channelType)}&reservationSid=${encodeURIComponent(reservationSid)}&caller=${encodeURIComponent(caller)}&workerEmail=${encodeURIComponent(workerEmail)}&questionIndex=0`;
+    const url = `https://${callbackDomain}/common/survey-questions?queueName=${queueName}&callSid=${callSid}&taskSid=${taskSid}&surveyKey=${surveyKey}&channelType=${encodeURIComponent(channelType)}&reservationSid=${encodeURIComponent(reservationSid)}&caller=${encodeURIComponent(caller)}&workerEmail=${encodeURIComponent(workerEmail)}&questionIndex=0`;
     console.log(url);
 
     const params = {

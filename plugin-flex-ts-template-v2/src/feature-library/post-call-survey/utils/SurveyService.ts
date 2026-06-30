@@ -7,7 +7,7 @@ import { ISurveyDefinition } from '../types/SurveyDefinition';
 import { SurveyItem } from '../types/SurveyItem';
 import SyncHelper from './SyncHelper';
 import SyncClient from '../../../utils/sdk-clients/sync/SyncClient';
-import { getRuleDefinitionsMapName, getSurveyDefinitionsMapName } from '../config';
+import { getRuleDefinitionsMapName, getSurveyDefinitionsMapName, getServerlessUrl } from '../config';
 
 export interface PendingAudioFile {
   fieldPath: 'message_intro' | 'message_end' | `question_${number}`;
@@ -18,6 +18,11 @@ export interface PendingAudioFile {
 export type UploadStage = 'uploading' | 'building' | 'deploying' | 'saving';
 
 class SurveyService extends ApiService {
+  private get pcsBase(): string {
+    const url = getServerlessUrl();
+    return url || `${this.serverlessProtocol}://${this.serverlessDomain}`;
+  }
+
   getQueueNames = async (): Promise<string[]> => {
     return new Promise<string[]>((resolve, reject) => {
       TaskRouterService.getQueues()
@@ -57,7 +62,7 @@ class SurveyService extends ApiService {
       };
 
       this.fetchJsonWithReject<any>(
-        `${this.serverlessProtocol}://${this.serverlessDomain}/features/post-call-survey/flex/start-voice-survey`,
+        `${this.pcsBase}/flex/start-voice-survey`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -185,7 +190,7 @@ class SurveyService extends ApiService {
           Token: encodeURIComponent(this.manager.user.token),
         };
         this.fetchJsonWithReject<{ assetVersionSid: string; pendingUrl: string }>(
-          `${this.serverlessProtocol}://${this.serverlessDomain}/features/post-call-survey/flex/upload-audio`,
+          `${this.pcsBase}/flex/upload-audio`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -206,7 +211,7 @@ class SurveyService extends ApiService {
       Token: encodeURIComponent(this.manager.user.token),
     };
     return this.fetchJsonWithReject<{ buildSid: string }>(
-      `${this.serverlessProtocol}://${this.serverlessDomain}/features/post-call-survey/flex/create-build`,
+      `${this.pcsBase}/flex/create-build`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -229,7 +234,7 @@ class SurveyService extends ApiService {
       };
 
       const result = await this.fetchJsonWithReject<{ status: string }>(
-        `${this.serverlessProtocol}://${this.serverlessDomain}/features/post-call-survey/flex/check-deployment-status`,
+        `${this.pcsBase}/flex/check-deployment-status`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },

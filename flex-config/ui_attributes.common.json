@@ -448,7 +448,8 @@
         ]
       },
       "post_call_survey": {
-        "enabled": false
+        "enabled": false,
+        "serverless_url": "<YOUR_POST_CALL_SURVEY_SERVERLESS_URL>"
       }
     }
   }

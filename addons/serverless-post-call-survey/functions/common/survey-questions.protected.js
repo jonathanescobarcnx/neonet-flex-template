@@ -1,4 +1,4 @@
-const TaskOperations = require(Runtime.getFunctions()['common/twilio-wrappers/taskrouter'].path);
+const TaskOperations = require(Runtime.getFunctions()['twilio-wrappers/taskrouter'].path);
 const { twilioExecute } = require(Runtime.getFunctions()['common/helpers/function-helper'].path);
 
 function addPromptToTwiml(twimlNode, text, type, audioUrl) {
@@ -129,7 +129,7 @@ exports.handler = async (context, event, callback) => {
 
     let callbackDomain = context.DOMAIN_NAME;
 
-    const nextUrl = `https://${callbackDomain}/features/post-call-survey/common/survey-questions?callSid=${callSid}&taskSid=${taskSid}&surveyKey=${surveyKey}&queueName=${queueName}&channelType=${encodeURIComponent(channelType)}&reservationSid=${encodeURIComponent(reservationSid)}&caller=${encodeURIComponent(caller)}&workerEmail=${encodeURIComponent(workerEmail)}&surveyTaskSid=${surveyTaskSid}&questionIndex=${nextQuestion}&attributes=${encodeURIComponent(
+    const nextUrl = `https://${callbackDomain}/common/survey-questions?callSid=${callSid}&taskSid=${taskSid}&surveyKey=${surveyKey}&queueName=${queueName}&channelType=${encodeURIComponent(channelType)}&reservationSid=${encodeURIComponent(reservationSid)}&caller=${encodeURIComponent(caller)}&workerEmail=${encodeURIComponent(workerEmail)}&surveyTaskSid=${surveyTaskSid}&questionIndex=${nextQuestion}&attributes=${encodeURIComponent(
       JSON.stringify(attributes),
     )}`;
 

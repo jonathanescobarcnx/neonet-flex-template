@@ -1,7 +1,5 @@
 const { prepareFlexFunction } = require(Runtime.getFunctions()['common/helpers/function-helper'].path);
-const AssetOps = require(Runtime.getFunctions()[
-  'features/post-call-survey/twilio-wrappers/serverless-assets'
-].path);
+const AssetOps = require(Runtime.getFunctions()['twilio-wrappers/serverless-assets'].path);
 
 const requiredParameters = [
   { key: 'fileBase64', purpose: 'Base64-encoded audio file content' },

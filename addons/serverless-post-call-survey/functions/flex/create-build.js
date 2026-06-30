@@ -1,7 +1,5 @@
 const { prepareFlexFunction } = require(Runtime.getFunctions()['common/helpers/function-helper'].path);
-const AssetOps = require(Runtime.getFunctions()[
-  'features/post-call-survey/twilio-wrappers/serverless-assets'
-].path);
+const AssetOps = require(Runtime.getFunctions()['twilio-wrappers/serverless-assets'].path);
 
 const requiredParameters = [
   { key: 'assetVersionSids', purpose: 'JSON array of asset version SIDs to include in the build' },
