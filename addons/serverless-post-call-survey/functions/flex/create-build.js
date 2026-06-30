@@ -3,6 +3,7 @@ const AssetOps = require(Runtime.getFunctions()['twilio-wrappers/serverless-asse
 
 const requiredParameters = [
   { key: 'assetVersionSids', purpose: 'JSON array of asset version SIDs to include in the build' },
+  { key: 'assetPaths', purpose: 'JSON array of asset paths corresponding to the version SIDs' },
   { key: 'Token', purpose: 'Flex Token' },
 ];
 
@@ -10,7 +11,7 @@ exports.handler = prepareFlexFunction(
   requiredParameters,
   async (context, event, callback, response, handleError) => {
     try {
-      const { assetVersionSids: assetVersionSidsRaw } = event;
+      const { assetVersionSids: assetVersionSidsRaw, assetPaths: assetPathsRaw } = event;
 
       let assetVersionSids;
       try {
@@ -27,7 +28,14 @@ exports.handler = prepareFlexFunction(
         return callback(null, response);
       }
 
-      const buildResult = await AssetOps.createBuildWithVersions({ context, newAssetVersionSids: assetVersionSids });
+      let assetPaths = [];
+      try {
+        assetPaths = JSON.parse(assetPathsRaw);
+      } catch {
+        // non-fatal: path filtering will simply be skipped
+      }
+
+      const buildResult = await AssetOps.createBuildWithVersions({ context, newAssetVersionSids: assetVersionSids, newAssetPaths: assetPaths });
 
       if (!buildResult.success) {
         response.setStatusCode(buildResult.status);

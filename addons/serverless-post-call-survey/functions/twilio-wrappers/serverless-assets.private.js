@@ -94,32 +94,38 @@ exports.uploadAudioAssetVersion = async ({ context, assetSid, assetPath, fileBuf
   }
 };
 
-// Accepts an array of new asset version SIDs and merges them into the latest build.
-// Fetches the full build by SID to get complete assetVersions, functionVersions,
-// and dependencies — the list() response does not populate these fields.
-exports.createBuildWithVersions = async ({ context, newAssetVersionSids }) => {
+// Merges new asset version SIDs into the currently DEPLOYED build.
+// newAssetPaths: paths corresponding to newAssetVersionSids — used to drop existing
+// versions at the same path so there are no duplicate-path conflicts on re-upload.
+exports.createBuildWithVersions = async ({ context, newAssetVersionSids, newAssetPaths = [] }) => {
   try {
-    const { serviceSid } = await discoverServiceIds(context);
+    const { serviceSid, environmentSid } = await discoverServiceIds(context);
     const client = context.getTwilioClient();
 
-    const buildsList = await client.serverless.v1.services(serviceSid).builds.list({ limit: 1 });
-    const latestBuildSummary = buildsList[0];
-
-    let existingAssetVersions = [];
+    let existingAssetVersionObjects = [];
     let existingFunctionVersions = [];
     let dependencies = [];
 
-    if (latestBuildSummary) {
-      const fullBuild = await client.serverless.v1
-        .services(serviceSid)
-        .builds(latestBuildSummary.sid)
-        .fetch();
-      existingAssetVersions = fullBuild.assetVersions?.map((v) => v.sid) ?? [];
+    // Use the deployed build as the baseline so we always carry forward every
+    // previously deployed audio asset. builds.list() ordering is not guaranteed
+    // and may return the initial empty build instead of the latest deployed one.
+    const env = await client.serverless.v1.services(serviceSid).environments(environmentSid).fetch();
+    const deployedBuildSid = env.buildSid;
+
+    if (deployedBuildSid) {
+      const fullBuild = await client.serverless.v1.services(serviceSid).builds(deployedBuildSid).fetch();
+      existingAssetVersionObjects = fullBuild.assetVersions ?? [];
       existingFunctionVersions = fullBuild.functionVersions?.map((v) => v.sid) ?? [];
       dependencies = fullBuild.dependencies ?? [];
     }
 
-    const mergedAssetVersions = [...new Set([...existingAssetVersions, ...newAssetVersionSids])];
+    // Drop any existing asset version whose path matches a new upload path.
+    // This prevents "duplicate path" errors when re-uploading audio for an existing question.
+    const existingFiltered = existingAssetVersionObjects
+      .filter((v) => !newAssetPaths.includes(v.path))
+      .map((v) => v.sid);
+
+    const mergedAssetVersions = [...existingFiltered, ...newAssetVersionSids];
 
     const build = await client.serverless.v1.services(serviceSid).builds.create({
       assetVersions: mergedAssetVersions,

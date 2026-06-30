@@ -60,6 +60,7 @@ exports.handler = prepareFlexFunction(
       response.setBody({
         success: true,
         assetVersionSid: uploadResult.assetVersionSid,
+        assetPath,
         pendingUrl: `https://${domainName}${assetPath}`,
       });
       return callback(null, response);

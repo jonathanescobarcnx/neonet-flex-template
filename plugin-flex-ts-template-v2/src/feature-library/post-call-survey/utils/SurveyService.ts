@@ -151,17 +151,19 @@ class SurveyService extends ApiService {
 
     onProgress('uploading');
 
-    const uploadResults: { fieldPath: string; assetVersionSid: string; pendingUrl: string }[] = [];
+    const uploadResults: { fieldPath: string; assetVersionSid: string; assetPath: string; pendingUrl: string }[] = [];
 
     for (const { fieldPath, assetPath, file } of pendingFiles) {
       const result = await this.uploadFileAsAsset(file, assetPath);
-      uploadResults.push({ fieldPath, assetVersionSid: result.assetVersionSid, pendingUrl: result.pendingUrl });
+      uploadResults.push({ fieldPath, assetVersionSid: result.assetVersionSid, assetPath: result.assetPath, pendingUrl: result.pendingUrl });
     }
 
     onProgress('building');
 
-    const assetVersionSids = uploadResults.map((r) => r.assetVersionSid);
-    const { buildSid } = await this.createBuild(assetVersionSids);
+    const { buildSid } = await this.createBuild(
+      uploadResults.map((r) => r.assetVersionSid),
+      uploadResults.map((r) => r.assetPath),
+    );
 
     onProgress('deploying');
 
@@ -178,7 +180,7 @@ class SurveyService extends ApiService {
   private uploadFileAsAsset = (
     file: File,
     assetPath: string,
-  ): Promise<{ assetVersionSid: string; pendingUrl: string }> => {
+  ): Promise<{ assetVersionSid: string; assetPath: string; pendingUrl: string }> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => {
@@ -189,7 +191,7 @@ class SurveyService extends ApiService {
           assetPath: encodeURIComponent(assetPath),
           Token: encodeURIComponent(this.manager.user.token),
         };
-        this.fetchJsonWithReject<{ assetVersionSid: string; pendingUrl: string }>(
+        this.fetchJsonWithReject<{ assetVersionSid: string; assetPath: string; pendingUrl: string }>(
           `https://${this.pcsBase}/flex/upload-audio`,
           {
             method: 'POST',
@@ -205,9 +207,10 @@ class SurveyService extends ApiService {
     });
   };
 
-  private createBuild = async (assetVersionSids: string[]): Promise<{ buildSid: string }> => {
+  private createBuild = async (assetVersionSids: string[], assetPaths: string[]): Promise<{ buildSid: string }> => {
     const encodedParams: EncodedParams = {
       assetVersionSids: encodeURIComponent(JSON.stringify(assetVersionSids)),
+      assetPaths: encodeURIComponent(JSON.stringify(assetPaths)),
       Token: encodeURIComponent(this.manager.user.token),
     };
     return this.fetchJsonWithReject<{ buildSid: string }>(
