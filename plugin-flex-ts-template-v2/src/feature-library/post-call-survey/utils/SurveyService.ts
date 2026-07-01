@@ -24,18 +24,10 @@ class SurveyService extends ApiService {
   }
 
   getQueueNames = async (): Promise<string[]> => {
-    return new Promise<string[]>((resolve, reject) => {
-      TaskRouterService.getQueues()
-        .then((queues) => {
-          const listOfQueues = queues?.map((q) => q.friendlyName);
-          if (listOfQueues === undefined) {
-            reject('Error getting queue names');
-          } else {
-            resolve(listOfQueues);
-          }
-        })
-        .catch((e) => reject(e));
-    });
+    const [queues, rules] = await Promise.all([TaskRouterService.getQueues(), this.getRules()]);
+    if (!queues) throw new Error('Error getting queue names');
+    const mappedQueues = new Set(rules.map((r) => r.data.queue_name));
+    return queues.map((q) => q.friendlyName).filter((name) => !mappedQueues.has(name));
   };
 
   startSurvey = async (
